@@ -1,0 +1,13 @@
+# build files
+*.raw
+*.raw.xz
+*.img
+
+# IDE configs
+.vscode/
+*.swp
+
+# Agent Tool Context
+.claude/
+CLAUDE.md
+AGENTS.md
