@@ -1,0 +1,30 @@
+name: Build Hummingbird Raspberry Pi 5 image
+  # Builds the bootc container natively on an arm64 runner.
+  on:
+    workflow_dispatch:
+    push:
+      branches: [main]
+    pull_request:
+
+  permissions:
+    contents: read
+
+  env:
+    IMAGE: localhost/flhb-rpi:latest
+
+  jobs:
+    build:
+      runs-on: ubuntu-24.04-arm
+      timeout-minutes: 60
+      steps:
+        - uses: actions/checkout@v5
+
+        - name: Build bootc image
+          run: sudo podman build -t "$IMAGE" -f Containerfile .
+
+        - name: Show image contents
+          run: |
+            sudo podman run --rm "$IMAGE" bash -c '
+              uname -m
+              cat /usr/lib/os-release
+              ls /usr/lib/modules' | tee -a "$GITHUB_STEP_SUMMARY"
