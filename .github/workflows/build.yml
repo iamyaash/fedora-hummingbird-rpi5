@@ -2,9 +2,6 @@ name: Build Hummingbird Raspberry Pi 5 image
 # Builds the bootc container natively on an arm64 runner.
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-  pull_request:
 
 permissions:
   contents: read
