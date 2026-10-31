@@ -7,8 +7,14 @@ FROM ${BASE_IMAGE}
 RUN rm -f /etc/dnf/protected.d/grub2-efi-aa64.conf \
           /etc/dnf/protected.d/grub2-tools-minimal.conf
 
-# Remove GRUB. Nothing else in the image needs it (checked with rpm -q --whatrequires).
+# Remove GRUB. Nothing else in the image needs it (checked with rpm -q --whatrequires).`
 RUN dnf -y remove grub2-efi-aa64 grub2-tools grub2-tools-minimal grub2-common \
     && dnf clean all
+
+# shim is protected by dnf too
+RUN rm -f /etc/dnf/protected.d/shim.conf
+
+# remove shim from dnf
+RUN dnf -y remove shim-aa64 efibootmgr && dnf clean all
 
 RUN bootc container lint
