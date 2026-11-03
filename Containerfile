@@ -8,9 +8,10 @@ RUN rm -f /etc/dnf/protected.d/grub2-efi-aa64.conf \
           /etc/dnf/protected.d/grub2-tools-minimal.conf \
           /etc/dnf/protected.d/shim.conf
 
-# Remove UEFI boot chain from dnf directly during build time
-RUN dnf -y remove grub2-efi-aa64 grub2-tools grub2-tools-minimal grub2-common \
-    shim-aa64 efibootmgr \
+# Remove UEFI boot chain & bootupd from dnf directly during build time
+RUN systemctl disable bootloader-update.service \
+    && dnf -y remove grub2-efi-aa64 grub2-tools grub2-tools-minimal grub2-common \
+       shim-aa64 efibootmgr bootupd \
+    && rm -rf /usr/lib/bootupd \
     && dnf clean all
-
 RUN bootc container lint
