@@ -18,6 +18,8 @@ RUN systemctl disable bootloader-update.service \
     && dnf -y remove grub2-efi-aa64 grub2-tools grub2-tools-minimal grub2-common \
        shim-aa64 efibootmgr bootupd \
        kernel kernel-core kernel-modules kernel-modules-core \
-    && rm -rf /usr/lib/bootupd /usr/lib/modules/* \
-    && dnf clean all
-RUN bootc container lint
+    && rm -rf /usr/lib/bootupd /usr/lib/modules/* /usr/lib/efi \
+    && dnf clean all \
+    && rm -rf /run/dnf /var/log/dnf5.log /var/cache/libdnf5
+
+RUN bootc container lint --fatal-warnings
