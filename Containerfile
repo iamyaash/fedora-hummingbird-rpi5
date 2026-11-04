@@ -8,6 +8,10 @@ RUN rm -f /etc/dnf/protected.d/grub2-efi-aa64.conf \
           /etc/dnf/protected.d/grub2-tools-minimal.conf \
           /etc/dnf/protected.d/shim.conf
 
+# Raspberry Pi kernel and firmware from AlmaLinux el10 repo
+COPY files/etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux-10 /etc/pki/rpm-gpg/
+COPY files/etc/yum.repos.d/almalinux-rpi.repo /etc/yum.repos.d/
+
 # Remove UEFI boot chain & bootupd from dnf directly during build time
 RUN systemctl disable bootloader-update.service \
     && dnf -y remove grub2-efi-aa64 grub2-tools grub2-tools-minimal grub2-common \

@@ -1,0 +1,7 @@
+[almalinux-rpi]
+name=AlmaLinux 10 - Raspberry Pi
+mirrorlist=https://mirrors.almalinux.org/mirrorlist/10/raspberrypi
+enabled=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux-10
+includepkgs=raspberrypi2-* linux-firmware-raspberrypi
