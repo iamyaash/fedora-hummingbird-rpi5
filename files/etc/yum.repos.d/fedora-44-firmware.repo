@@ -1,0 +1,15 @@
+[fedora-44-firmware]
+name=Fedora 44 - firmware only
+baseurl=https://dl.fedoraproject.org/pub/fedora/linux/releases/44/Everything/aarch64/os/
+enabled=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-44-primary
+includepkgs=linux-firmware linux-firmware-whence brcmfmac-firmware wireless-regdb iw
+
+[fedora-44-updates-firmware]
+name=Fedora 44 Updates - firmware only
+baseurl=https://dl.fedoraproject.org/pub/fedora/linux/updates/44/Everything/aarch64/
+enabled=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-fedora-44-primary
+includepkgs=linux-firmware linux-firmware-whence brcmfmac-firmware wireless-regdb iw
