@@ -22,4 +22,9 @@ RUN systemctl disable bootloader-update.service \
     && dnf clean all \
     && rm -rf /run/dnf /var/log/dnf5.log /var/cache/libdnf5
 
+# Raspberry Pi kernel, installed after the rm of /usr/lib/modules/* so it isn't deleted
+RUN dnf -y install --setopt=install_weak_deps=False raspberrypi2-kernel4 \
+    && dnf clean all \
+    && rm -rf /run/dnf /var/log/dnf5.log /var/cache/libdnf5
+
 RUN bootc container lint --fatal-warnings
