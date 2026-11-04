@@ -14,17 +14,21 @@ COPY files/etc/yum.repos.d/almalinux-rpi.repo /etc/yum.repos.d/
 
 # Remove UEFI boot chain & bootupd from dnf directly during build time
 # Remove bootupd and kernel leftover files
+# Install Raspberry Pi kernel after removing /usr/lib/modules/*
+# Move vmlinuz, initramfs, config to /usr/lib/modules/*
+# Remove boot/* and clean /var/cache/ldconfig
 RUN systemctl disable bootloader-update.service \
     && dnf -y remove grub2-efi-aa64 grub2-tools grub2-tools-minimal grub2-common \
        shim-aa64 efibootmgr bootupd \
        kernel kernel-core kernel-modules kernel-modules-core \
     && rm -rf /usr/lib/bootupd /usr/lib/modules/* /usr/lib/efi \
+    && dnf -y install --setopt=install_weak_deps=False raspberrypi2-kernel4 \
+    && KVER=$(ls /usr/lib/modules) \
+    && mv /boot/kernel-$KVER.img /usr/lib/modules/$KVER/vmlinuz \
+    && mv /boot/initramfs-$KVER.img /usr/lib/modules/$KVER/initramfs.img \
+    && mv /boot/config-$KVER /usr/lib/modules/$KVER/config \
+    && rm -rf /boot/* \
     && dnf clean all \
-    && rm -rf /run/dnf /var/log/dnf5.log /var/cache/libdnf5
-
-# Raspberry Pi kernel, installed after the rm of /usr/lib/modules/* so it isn't deleted
-RUN dnf -y install --setopt=install_weak_deps=False raspberrypi2-kernel4 \
-    && dnf clean all \
-    && rm -rf /run/dnf /var/log/dnf5.log /var/cache/libdnf5
+    && rm -rf /run/dnf /var/log/dnf5.log /var/cache/libdnf5 /var/cache/ldconfig
 
 RUN bootc container lint --fatal-warnings
