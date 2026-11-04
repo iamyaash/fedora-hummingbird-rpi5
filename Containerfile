@@ -22,11 +22,13 @@ RUN systemctl disable bootloader-update.service \
        shim-aa64 efibootmgr bootupd \
        kernel kernel-core kernel-modules kernel-modules-core \
     && rm -rf /usr/lib/bootupd /usr/lib/modules/* /usr/lib/efi \
-    && dnf -y install --setopt=install_weak_deps=False raspberrypi2-kernel4 \
+    && dnf -y install --setopt=install_weak_deps=False raspberrypi2-kernel4 raspberrypi2-firmware \
     && KVER=$(ls /usr/lib/modules) \
     && mv /boot/kernel-$KVER.img /usr/lib/modules/$KVER/vmlinuz \
     && mv /boot/initramfs-$KVER.img /usr/lib/modules/$KVER/initramfs.img \
     && mv /boot/config-$KVER /usr/lib/modules/$KVER/config \
+    && mkdir -p /usr/share/raspberrypi2-firmware \
+    && mv /boot/bootcode.bin /boot/LICENCE.broadcom /boot/start*.elf /boot/fixup*.dat /usr/share/raspberrypi2-firmware/ \
     && rm -rf /boot/* \
     && dnf clean all \
     && rm -rf /run/dnf /var/log/dnf5.log /var/cache/libdnf5 /var/cache/ldconfig
