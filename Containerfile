@@ -47,4 +47,7 @@ COPY files/usr/lib/tmpfiles.d/fedora-hummingbird-rpi5.conf /usr/lib/tmpfiles.d/
 # brcmfmac drops off WiFi with power save on, so disable it
 COPY files/usr/lib/NetworkManager/conf.d/50-rpi-wifi-powersave.conf /usr/lib/NetworkManager/conf.d/
 
+# Override Hummingbird's kargs: the Pi 5 debug UART is ttyAMA10, not ttyS0
+COPY files/usr/lib/bootc/kargs.d/00-base.toml /usr/lib/bootc/kargs.d/
+
 RUN bootc container lint --fatal-warnings

@@ -1,0 +1,4 @@
+# Replaces Hummingbird's 00-base.toml (console=tty1 console=ttyS0,115200n8).
+# ttyS0 doesn't exist on the Pi 5: its debug UART is ttyAMA10.
+# The last console= becomes /dev/console, so tty1 (HDMI) gets interactive output.
+kargs = ["rootwait", "console=ttyAMA10,115200", "console=tty1"]
