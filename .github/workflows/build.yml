@@ -14,7 +14,7 @@ permissions:
   contents: read
 
 env:
-  IMAGE: localhost/flhb-rpi:latest
+  IMAGE: localhost/fedora-hummingbird-rpi5:latest
   # What `bootc upgrade` on the Pi will pull. Nothing is pushed there yet.
   TARGET_IMGREF: ghcr.io/${{ github.repository }}:latest
   DISK_SIZE: 8G

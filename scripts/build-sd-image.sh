@@ -11,7 +11,7 @@
 # inside the image so it uses the same tools the Pi will use at upgrade time.
 #
 # Usage: sudo scripts/build-sd-image.sh <local-image> <target-imgref> <output.raw> [size]
-#   local-image    image in root's containers-storage, e.g. localhost/flhb-rpi:latest
+#   local-image    image in root's containers-storage, e.g. localhost/fedora-hummingbird-rpi5:latest
 #   target-imgref  what `bootc upgrade` on the Pi pulls, e.g. ghcr.io/owner/name:latest
 #   size           raw image size, default 8G (cloud-init grows root on first boot)
 set -euo pipefail
