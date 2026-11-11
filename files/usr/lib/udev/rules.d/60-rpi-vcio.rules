@@ -1,0 +1,2 @@
+# Let the video group use the VideoCore mailbox (vcgencmd, vcmailbox) without sudo, as on Raspberry Pi OS.
+KERNEL=="vcio", GROUP="video", MODE="0660"
