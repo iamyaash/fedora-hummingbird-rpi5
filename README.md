@@ -2,7 +2,7 @@
 
 Fedora Hummingbird (a bootc, image-based OS) on the Raspberry Pi 5, booted directly by the Pi's own firmware, without UEFI, U-Boot or GRUB.
 
-**Status:** work in progress, not yet tested on hardware.
+**Status:** Work in progress. Tested on a Raspberry Pi 5 (8 GB) with no known issues so far; further testing is ongoing.
 
 ## How
 
@@ -21,13 +21,23 @@ Based on [AlmaLinux/bootc-images-rpi](https://github.com/AlmaLinux/bootc-images-
 ## Build
 
 CI ([`.github/workflows/build.yml`](.github/workflows/build.yml)) builds on a native arm64
-runner and uploads a flashable SD image as a workflow artifact.
+runner and uploads a compressed, flashable SD image as a workflow artifact.
 
-Locally, on an arm64 host:
+To build locally, on an arm64 host with podman (as root):
 
 ```sh
-sudo podman build -t localhost/flhb-rpi:latest -f Containerfile .
-sudo scripts/build-sd-image.sh localhost/flhb-rpi:latest ghcr.io/<owner>/fedora-hummingbird-rpi5:latest fedora-hummingbird-rpi5.raw
+# 1. Build the bootc container image
+sudo podman build -t localhost/fedora-hummingbird-rpi5:latest -f Containerfile .
+
+# 2. Assemble the SD card image
+#    args: <local-image> <target-imgref for bootc upgrade> <output.raw> [size, default 8G]
+sudo scripts/build-sd-image.sh \
+  localhost/fedora-hummingbird-rpi5:latest \
+  ghcr.io/<owner>/fedora-hummingbird-rpi5:latest \
+  fedora-hummingbird-rpi5.raw
+
+# 3. Optional: compress
+xz -T0 fedora-hummingbird-rpi5.raw
 ```
 
 ## Flash and first boot
@@ -36,6 +46,8 @@ sudo scripts/build-sd-image.sh localhost/flhb-rpi:latest ghcr.io/<owner>/fedora-
 xzcat fedora-hummingbird-rpi5-*.raw.xz | sudo dd of=/dev/sdX bs=4M conv=fsync status=progress
 ```
 
-Before booting, mount the card's first partition (`CIDATA`) and put your SSH public key
-into `user-data`. Boot with ethernet connected, find `hummingbird-rpi` in your router's
+Before first boot, mount the card's first partition (`CIDATA`) and add your SSH public key
+to `user-data`. Boot with ethernet connected, find `hummingbird-rpi` in your router's
 client list, then run `ssh hummingbird@<ip>`.
+
+> Thanks to [Claude](https://claude.ai) (Anthropic), which helped with guidance, reviews, script building and documentation edits.
