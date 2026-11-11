@@ -50,4 +50,12 @@ COPY files/usr/lib/NetworkManager/conf.d/50-rpi-wifi-powersave.conf /usr/lib/Net
 # Override Hummingbird's kargs: the Pi 5 debug UART is ttyAMA10, not ttyS0
 COPY files/usr/lib/bootc/kargs.d/00-base.toml /usr/lib/bootc/kargs.d/
 
+# Rebuild the initramfs: no-hostonly since the build host is not a Pi,
+# with the xfs/erofs/overlay modules from 30-rpi.conf for root and composefs
+COPY files/usr/lib/dracut/dracut.conf.d/30-rpi.conf /usr/lib/dracut/dracut.conf.d/
+RUN KVER=$(ls /usr/lib/modules) \
+    && dracut --force --no-hostonly --kver "$KVER" "/usr/lib/modules/$KVER/initramfs.img" \
+    && lsinitrd "/usr/lib/modules/$KVER/initramfs.img" | grep -E '/(xfs|erofs|overlay)\.ko' \
+    && rm -rf /var/cache/ldconfig
+
 RUN bootc container lint --fatal-warnings
