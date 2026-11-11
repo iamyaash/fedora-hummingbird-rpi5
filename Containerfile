@@ -29,6 +29,8 @@ RUN systemctl disable bootloader-update.service \
     && rm -rf /usr/lib/bootupd /usr/lib/modules/* /usr/lib/efi \
     && dnf -y install --setopt=install_weak_deps=False raspberrypi2-kernel4 raspberrypi2-firmware \
     linux-firmware-raspberrypi brcmfmac-firmware wireless-regdb \
+    wpa_supplicant bluez NetworkManager-wifi \
+    && systemctl enable bluetooth.service \
     && KVER=$(ls /usr/lib/modules) \
     && mv /boot/kernel-$KVER.img /usr/lib/modules/$KVER/vmlinuz \
     && mv /boot/initramfs-$KVER.img /usr/lib/modules/$KVER/initramfs.img \
@@ -38,5 +40,8 @@ RUN systemctl disable bootloader-update.service \
     && rm -rf /boot/* \
     && dnf clean all \
     && rm -rf /run/dnf /var/log/dnf5.log /var/cache/libdnf5 /var/cache/ldconfig
+
+# Declare /var folders from NetworkManager and bluez, since bootc doesn't update /var
+COPY files/usr/lib/tmpfiles.d/fedora-hummingbird-rpi5.conf /usr/lib/tmpfiles.d/
 
 RUN bootc container lint --fatal-warnings
