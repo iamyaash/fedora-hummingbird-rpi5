@@ -34,6 +34,7 @@ RUN systemctl disable bootloader-update.service \
     && dnf -y install --setopt=install_weak_deps=False raspberrypi2-kernel4 raspberrypi2-firmware \
     linux-firmware-raspberrypi brcmfmac-firmware wireless-regdb \
     wpa_supplicant bluez NetworkManager-wifi \
+    cloud-init cloud-utils-growpart xfsprogs jq \
     && systemctl enable bluetooth.service \
     && KVER=$(ls /usr/lib/modules) \
     && mv /boot/kernel-$KVER.img /usr/lib/modules/$KVER/vmlinuz \
@@ -59,7 +60,15 @@ RUN base="https://raw.githubusercontent.com/kfox1111/rpi-bootc-bootloader/refs/t
     && chmod 0755 /usr/bin/rpi-bootc-bootloader \
     && grep -q "VERSION=\"${RPI_BOOTC_BOOTLOADER_VERSION}\"" /usr/bin/rpi-bootc-bootloader
 
-# Declare /var folders from NetworkManager and bluez, since bootc doesn't update /var
+# cloud-init: grow the partition behind /sysroot and resize /var, since / is
+# read-only composefs on ostree (same patch as AlmaLinux's bootstrap image)
+COPY files/etc/cloud/ /etc/cloud/
+RUN f="$(echo /usr/lib/python3*/site-packages/cloudinit/config/cc_resizefs.py)" \
+    && grep -q 'resize_what = "/"' "$f" \
+    && sed -i 's@resize_what = "/"@resize_what = "/var"@' "$f" \
+    && rm -f "$(dirname "$f")"/__pycache__/cc_resizefs.*.pyc
+
+# Declare /var folders from NetworkManager, bluez and cloud-init, since bootc doesn't update /var
 COPY files/usr/lib/tmpfiles.d/fedora-hummingbird-rpi5.conf /usr/lib/tmpfiles.d/
 
 # brcmfmac drops off WiFi with power save on, so disable it
@@ -78,5 +87,7 @@ RUN KVER=$(ls /usr/lib/modules) \
     && dracut --force --no-hostonly --kver "$KVER" "/usr/lib/modules/$KVER/initramfs.img" \
     && lsinitrd "/usr/lib/modules/$KVER/initramfs.img" | grep -E '/(xfs|erofs|overlay)\.ko' \
     && rm -rf /var/cache/ldconfig
+
+RUN rm -rf /run/cloud-init
 
 RUN bootc container lint --fatal-warnings
