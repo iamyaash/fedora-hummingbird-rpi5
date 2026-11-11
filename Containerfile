@@ -1,7 +1,10 @@
 # Pinned base: bump the date tag and digest together.
 ARG BASE_IMAGE=quay.io/hummingbird-community/os-minimal:20261028@sha256:712da83e76023496164d92c70d91658feb8703fbb1a5e4fc012cb0cf4a78056f
 
+ARG RPI_BOOTC_BOOTLOADER_VERSION=v0.0.8
+
 FROM ${BASE_IMAGE}
+ARG RPI_BOOTC_BOOTLOADER_VERSION
 
 # GRUB and shim are protected by dnf in /etc/dnf/protected.d, so drop the protection so dnf can remove it
 RUN rm -f /etc/dnf/protected.d/grub2-efi-aa64.conf \
@@ -21,6 +24,7 @@ COPY files/etc/yum.repos.d/fedora-44-firmware.repo /etc/yum.repos.d/
 # Remove bootupd and kernel leftover files
 # Install Raspberry Pi kernel after removing /usr/lib/modules/*
 # Move vmlinuz, initramfs, config to /usr/lib/modules/*
+# Stage VideoCore firmware in /usr/lib/ostree-boot for the FAT partition
 # Remove boot/* and clean /var/cache/ldconfig
 RUN systemctl disable bootloader-update.service \
     && dnf -y remove grub2-efi-aa64 grub2-tools grub2-tools-minimal grub2-common \
@@ -35,11 +39,25 @@ RUN systemctl disable bootloader-update.service \
     && mv /boot/kernel-$KVER.img /usr/lib/modules/$KVER/vmlinuz \
     && mv /boot/initramfs-$KVER.img /usr/lib/modules/$KVER/initramfs.img \
     && mv /boot/config-$KVER /usr/lib/modules/$KVER/config \
-    && mkdir -p /usr/share/raspberrypi2-firmware \
-    && mv /boot/bootcode.bin /boot/LICENCE.broadcom /boot/start*.elf /boot/fixup*.dat /usr/share/raspberrypi2-firmware/ \
+    && test -f /usr/share/raspberrypi2-kernel4/$KVER/boot/bcm2712-rpi-5-b.dtb \
+    && test -f /usr/share/raspberrypi2-kernel4/$KVER/boot/bcm2712d0-rpi-5-b.dtb \
+    && mkdir -p /usr/lib/ostree-boot \
+    && mv /boot/bootcode.bin /boot/LICENCE.broadcom /boot/start*.elf /boot/fixup*.dat /usr/lib/ostree-boot/ \
+    && echo '# Per-deployment firmware settings (board-wide ones go in config-bootc-common.txt).' \
+       > /usr/lib/modules/$KVER/rpi-config.txt \
     && rm -rf /boot/* \
     && dnf clean all \
     && rm -rf /run/dnf /var/log/dnf5.log /var/cache/libdnf5 /var/cache/ldconfig
+
+# rpi-bootc-bootloader: mirrors each bootc deployment onto the FAT partition
+# (bootc/entries/ostree-N/) and flips os_prefix in config.txt
+RUN base="https://raw.githubusercontent.com/kfox1111/rpi-bootc-bootloader/refs/tags/${RPI_BOOTC_BOOTLOADER_VERSION}" \
+    && mkdir -p /usr/lib/systemd/system/ostree-finalize-staged.service.d \
+    && curl -fsSL -o /usr/bin/rpi-bootc-bootloader "$base/rpi-bootc-bootloader" \
+    && curl -fsSL -o /usr/lib/systemd/system/ostree-finalize-staged.service.d/rpi-bootc-bootloader.conf \
+       "$base/system/ostree-finalize-staged.service.d/rpi-bootc-bootloader.conf" \
+    && chmod 0755 /usr/bin/rpi-bootc-bootloader \
+    && grep -q "VERSION=\"${RPI_BOOTC_BOOTLOADER_VERSION}\"" /usr/bin/rpi-bootc-bootloader
 
 # Declare /var folders from NetworkManager and bluez, since bootc doesn't update /var
 COPY files/usr/lib/tmpfiles.d/fedora-hummingbird-rpi5.conf /usr/lib/tmpfiles.d/
