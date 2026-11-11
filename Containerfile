@@ -44,4 +44,7 @@ RUN systemctl disable bootloader-update.service \
 # Declare /var folders from NetworkManager and bluez, since bootc doesn't update /var
 COPY files/usr/lib/tmpfiles.d/fedora-hummingbird-rpi5.conf /usr/lib/tmpfiles.d/
 
+# brcmfmac drops off WiFi with power save on, so disable it
+COPY files/usr/lib/NetworkManager/conf.d/50-rpi-wifi-powersave.conf /usr/lib/NetworkManager/conf.d/
+
 RUN bootc container lint --fatal-warnings
