@@ -1,27 +1,77 @@
-name: Build Hummingbird Raspberry Pi 5 image
-# Builds the bootc container natively on an arm64 runner.
+name: Build Hummingbird Pi 5 image
+
+# Builds the bootc container natively on an arm64 runner (no qemu) and assembles a
+# flashable SD card image, uploaded as a workflow artifact.
+
 on:
   workflow_dispatch:
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
 
 env:
   IMAGE: localhost/flhb-rpi:latest
+  # What `bootc upgrade` on the Pi will pull. Nothing is pushed there yet.
+  TARGET_IMGREF: ghcr.io/${{ github.repository }}:latest
+  DISK_SIZE: 8G
 
 jobs:
   build:
     runs-on: ubuntu-24.04-arm
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v5
 
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache
+          sudo docker image prune -af || true
+          df -h /
+
+      - name: Install disk tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends xfsprogs dosfstools parted
+          sudo podman version
+
       - name: Build bootc image
-        run: sudo podman build -t "$IMAGE" -f Containerfile .
+        run: |
+          sudo podman build \
+            --security-opt=label=disable \
+            --cap-add=all \
+            --device /dev/fuse \
+            -t "$IMAGE" \
+            -f Containerfile .
 
       - name: Show image contents
         run: |
           sudo podman run --rm "$IMAGE" bash -c '
-            uname -m
             cat /usr/lib/os-release
-            ls /usr/lib/modules' | tee -a "$GITHUB_STEP_SUMMARY"
+            ls /usr/lib/modules
+            rpm -q raspberrypi2-kernel4 raspberrypi2-firmware linux-firmware-raspberrypi bootc
+            ls /usr/lib/ostree-boot' | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Assemble SD card image
+        run: |
+          NAME="fedora-hummingbird-rpi5-$(date -u +%Y%m%d)-${GITHUB_SHA::7}.raw"
+          echo "NAME=$NAME" >> "$GITHUB_ENV"
+          sudo scripts/build-sd-image.sh "$IMAGE" "${TARGET_IMGREF,,}" "$RUNNER_TEMP/$NAME" "$DISK_SIZE"
+
+      - name: Compress
+        run: |
+          sudo xz -T0 -3 "$RUNNER_TEMP/$NAME"
+          sudo chown "$(id -u)" "$RUNNER_TEMP/$NAME.xz"
+          ls -lh "$RUNNER_TEMP/$NAME.xz"
+
+      - name: Upload SD card image
+        uses: actions/upload-artifact@v5
+        with:
+          name: fedora-hummingbird-rpi5-sdcard-image
+          path: ${{ runner.temp }}/${{ env.NAME }}.xz
+          retention-days: 14
+          if-no-files-found: error
+          compression-level: 0
