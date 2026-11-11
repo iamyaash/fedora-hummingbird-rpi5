@@ -1,0 +1,24 @@
+#cloud-config
+#
+# First-boot setup for the Hummingbird Raspberry Pi 5 image (cloud-init NoCloud).
+# Edit this file on the CIDATA partition BEFORE the first boot. It is applied once.
+# Docs: https://cloudinit.readthedocs.io/en/latest/reference/examples.html
+
+# cloud-init on RHEL-family distros sets the FQDN as the hostname. Without a dotted
+# name it resolves to "localhost", so give it one and prefer the short name.
+hostname: hummingbird-rpi
+fqdn: hummingbird-rpi.local
+prefer_fqdn_over_hostname: false
+ssh_pwauth: false
+
+users:
+  - name: hummingbird
+    groups: [ wheel, adm, systemd-journal, video ]
+    sudo: [ "ALL=(ALL) NOPASSWD:ALL" ]
+    # Password login is locked. To log in on an HDMI console with a keyboard,
+    # set lock_passwd: false and add a hash from `openssl passwd -6`:
+    #   passwd: $6$...
+    lock_passwd: true
+    # REQUIRED for SSH: put your public key here (cat ~/.ssh/id_ed25519.pub).
+    ssh_authorized_keys:
+      - ssh-ed25519 REPLACE_WITH_YOUR_PUBLIC_KEY
