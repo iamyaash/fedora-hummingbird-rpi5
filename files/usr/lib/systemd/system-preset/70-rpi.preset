@@ -1,0 +1,11 @@
+# Evaluated before 80-hummingbird.preset.
+# Hardware and first-boot services for the Pi image.
+enable NetworkManager.service
+enable sshd.service
+enable bluetooth.service
+enable chronyd.service
+enable cloud-init-main.service
+enable cloud-init-local.service
+enable cloud-init-network.service
+enable cloud-config.service
+enable cloud-final.service

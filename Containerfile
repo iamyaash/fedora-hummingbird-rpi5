@@ -35,7 +35,6 @@ RUN systemctl disable bootloader-update.service \
     linux-firmware-raspberrypi brcmfmac-firmware wireless-regdb \
     wpa_supplicant bluez NetworkManager-wifi \
     cloud-init cloud-utils-growpart xfsprogs jq \
-    && systemctl enable bluetooth.service \
     && KVER=$(ls /usr/lib/modules) \
     && mv /boot/kernel-$KVER.img /usr/lib/modules/$KVER/vmlinuz \
     && mv /boot/initramfs-$KVER.img /usr/lib/modules/$KVER/initramfs.img \
@@ -67,6 +66,12 @@ RUN f="$(echo /usr/lib/python3*/site-packages/cloudinit/config/cc_resizefs.py)" 
     && grep -q 'resize_what = "/"' "$f" \
     && sed -i 's@resize_what = "/"@resize_what = "/var"@' "$f" \
     && rm -f "$(dirname "$f")"/__pycache__/cc_resizefs.*.pyc
+
+# Enable network, SSH, bluetooth, clock and cloud-init services via preset
+COPY files/usr/lib/systemd/system-preset/70-rpi.preset /usr/lib/systemd/system-preset/
+RUN systemctl preset NetworkManager.service sshd.service bluetooth.service chronyd.service \
+    cloud-init-main.service cloud-init-local.service cloud-init-network.service \
+    cloud-config.service cloud-final.service
 
 # Declare /var folders from NetworkManager, bluez and cloud-init, since bootc doesn't update /var
 COPY files/usr/lib/tmpfiles.d/fedora-hummingbird-rpi5.conf /usr/lib/tmpfiles.d/
