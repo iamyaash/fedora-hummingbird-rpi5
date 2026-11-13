@@ -12,11 +12,13 @@ concurrency:
 
 permissions:
   contents: read
+  packages: write
 
 env:
   IMAGE: localhost/fedora-hummingbird-rpi5:latest
-  # What `bootc upgrade` on the Pi will pull. Nothing is pushed there yet.
+  # What bootc upgrade on the Pi pulls. Pushed from main only
   TARGET_IMGREF: ghcr.io/${{ github.repository }}:latest
+  REGISTRY_IMAGE: ghcr.io/${{ github.repository }}
   DISK_SIZE: 8G
 
 jobs:
@@ -25,6 +27,12 @@ jobs:
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v5
+
+      - name: Set tags
+        run: |
+          echo "DATE=$(date -u +%Y%m%d)" >> "$GITHUB_ENV"
+          echo "SHA=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+          echo "REGISTRY_IMAGE=${REGISTRY_IMAGE,,}" >> "$GITHUB_ENV"
 
       - name: Free disk space
         run: |
@@ -57,9 +65,22 @@ jobs:
 
       - name: Assemble SD card image
         run: |
-          NAME="fedora-hummingbird-rpi5-$(date -u +%Y%m%d)-${GITHUB_SHA::7}.raw"
+          NAME="fedora-hummingbird-rpi5-$DATE-$SHA.raw"
           echo "NAME=$NAME" >> "$GITHUB_ENV"
           sudo scripts/build-sd-image.sh "$IMAGE" "${TARGET_IMGREF,,}" "$RUNNER_TEMP/$NAME" "$DISK_SIZE"
+
+      - name: Push to GHCR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "$GH_TOKEN" | sudo podman login ghcr.io -u "${{ github.actor }}" --password-stdin
+          TAGS="$DATE-$SHA $SHA"
+          [ "$GITHUB_REF" = refs/heads/main ] && TAGS="$TAGS latest"
+          for t in $TAGS; do
+            sudo podman tag "$IMAGE" "$REGISTRY_IMAGE:$t"
+            sudo podman push "$REGISTRY_IMAGE:$t"
+            echo "Pushed \`$REGISTRY_IMAGE:$t\`" >> "$GITHUB_STEP_SUMMARY"
+          done
 
       - name: Compress
         run: |
