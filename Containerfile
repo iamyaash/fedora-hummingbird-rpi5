@@ -32,7 +32,7 @@ RUN systemctl disable bootloader-update.service \
        kernel kernel-core kernel-modules kernel-modules-core \
     && rm -rf /usr/lib/bootupd /usr/lib/modules/* /usr/lib/efi \
     && dnf -y install --setopt=install_weak_deps=False raspberrypi2-kernel4 raspberrypi2-firmware \
-    linux-firmware-raspberrypi raspberrypi-userland brcmfmac-firmware wireless-regdb \
+    linux-firmware-raspberrypi brcmfmac-firmware wireless-regdb \
     wpa_supplicant bluez NetworkManager-wifi \
     cloud-init cloud-utils-growpart xfsprogs jq \
     && KVER=$(ls /usr/lib/modules) \
