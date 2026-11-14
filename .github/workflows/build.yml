@@ -15,10 +15,12 @@ permissions:
   packages: write
 
 env:
-  IMAGE: localhost/fedora-hummingbird-rpi5:latest
-  # What bootc upgrade on the Pi pulls. Pushed from main only
-  TARGET_IMGREF: ghcr.io/${{ github.repository }}:latest
-  REGISTRY_IMAGE: ghcr.io/${{ github.repository }}
+  # Release channel. The project is experimental, so everything is "unstable":
+  # image tags, the tag cards track, labels and the SD image name. Change this one
+  # value when moving to a stable channel.
+  CHANNEL: unstable
+  IMAGE: localhost/hummingbird-rpi5:unstable
+  REGISTRY_IMAGE: ghcr.io/${{ github.repository_owner }}/hummingbird-rpi5
   DISK_SIZE: 8G
 
 jobs:
@@ -33,6 +35,8 @@ jobs:
           echo "DATE=$(date -u +%Y%m%d)" >> "$GITHUB_ENV"
           echo "SHA=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
           echo "REGISTRY_IMAGE=${REGISTRY_IMAGE,,}" >> "$GITHUB_ENV"
+          # What `bootc upgrade` on the Pi pulls: the moving channel tag, pushed from main only
+          echo "TARGET_IMGREF=${REGISTRY_IMAGE,,}:$CHANNEL" >> "$GITHUB_ENV"
 
       - name: Free disk space
         run: |
@@ -52,6 +56,9 @@ jobs:
             --security-opt=label=disable \
             --cap-add=all \
             --device /dev/fuse \
+            --label "org.opencontainers.image.version=$CHANNEL-$DATE-$SHA" \
+            --label "org.opencontainers.image.description=UNSTABLE, experimental Hummingbird image for the Raspberry Pi 5. Not for production use." \
+            --label "org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}" \
             -t "$IMAGE" \
             -f Containerfile .
 
@@ -68,17 +75,19 @@ jobs:
 
       - name: Assemble SD card image
         run: |
-          NAME="fedora-hummingbird-rpi5-$DATE-$SHA.raw"
+          NAME="hummingbird-rpi5-$CHANNEL-$DATE-$SHA.raw"
           echo "NAME=$NAME" >> "$GITHUB_ENV"
-          sudo scripts/build-sd-image.sh "$IMAGE" "${TARGET_IMGREF,,}" "$RUNNER_TEMP/$NAME" "$DISK_SIZE"
+          sudo scripts/build-sd-image.sh "$IMAGE" "$TARGET_IMGREF" "$RUNNER_TEMP/$NAME" "$DISK_SIZE"
 
       - name: Push to GHCR
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "$GH_TOKEN" | sudo podman login ghcr.io -u "${{ github.actor }}" --password-stdin
-          TAGS="$DATE-$SHA $SHA"
-          [ "$GITHUB_REF" = refs/heads/main ] && TAGS="$TAGS latest"
+          # Every run: unstable-<date>-<sha> and unstable-<sha>. Only main moves `unstable`.
+          # No `latest`: that's reserved for a future stable channel.
+          TAGS="$CHANNEL-$DATE-$SHA $CHANNEL-$SHA"
+          [ "$GITHUB_REF" = refs/heads/main ] && TAGS="$TAGS $CHANNEL"
           for t in $TAGS; do
             sudo podman tag "$IMAGE" "$REGISTRY_IMAGE:$t"
             sudo podman push "$REGISTRY_IMAGE:$t"
@@ -94,7 +103,7 @@ jobs:
       - name: Upload SD card image
         uses: actions/upload-artifact@v5
         with:
-          name: fedora-hummingbird-rpi5-sdcard-image
+          name: hummingbird-rpi5-${{ env.CHANNEL }}-sdcard-image
           path: ${{ runner.temp }}/${{ env.NAME }}.xz
           retention-days: 14
           if-no-files-found: error
