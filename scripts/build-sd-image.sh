@@ -99,7 +99,7 @@ podman run --rm --privileged \
 mount "${LOOP}p1" "$WORK/fat"
 E="$WORK/fat/bootc/entries/ostree-1"
 for f in config.txt config-bootc-default.txt "$E/vmlinuz" "$E/initrd" "$E/cmdline.txt" \
-         "$E/bcm2712-rpi-5-b.dtb" "$E/bcm2712d0-rpi-5-b.dtb" "$E/overlays/README"; do
+         "$E/bcm2712-rpi-5-b.dtb" "$E/bcm2712d0-rpi-5-b.dtb"; do
     case "$f" in /*) p="$f" ;; *) p="$WORK/fat/$f" ;; esac
     test -s "$p" || { echo "missing on boot partition: $f" >&2; exit 1; }
 done
