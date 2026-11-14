@@ -56,9 +56,10 @@ Details:
   build fails. That's intended.
 - **Bluetooth:** Fedora's kernel has no `CONFIG_SERIAL_8250_BCM7271`, the driver for the
   Pi 5 Bluetooth UART (`brcm,bcm7271-uart`). `kmod/bcm7271-uart` builds the unmodified
-  upstream driver out of tree. Its sources, including the internal `8250.h`, are fetched from
-  the kernel.org stable tree at the base kernel's exact version, so the private header matches
-  the running kernel. It loads by DT alias; `hci_uart` and `btbcm` then bring up `hci0` with
+  upstream driver out of tree. Its sources, including the private `8250.h`, are vendored from
+  the kernel.org stable tree at the version in `kmod/bcm7271-uart/VERSION`; the build fails if
+  that doesn't match the base kernel. After a base bump, run
+  `make -C kmod/bcm7271-uart update KVERSION=<x.y.z>` and commit. It loads by DT alias; `hci_uart` and `btbcm` then bring up `hci0` with
   the Pi 5 firmware patch (`BCM4345C0.raspberrypi,5-model-b.hcd`). Unsigned, like `vcio.ko`.
 - **Device trees:** `bcm2712-rpi-5-b.dtb`, and upstream `bcm2712-d-rpi-5-b.dtb` installed as
   `bcm2712d0-rpi-5-b.dtb` (the name the firmware loads). They're staged under
