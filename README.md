@@ -13,13 +13,15 @@ firmware and tools from AlmaLinux. The image is named `hummingbird-rpi5`.
 only). Tested on a Pi 5 (8 GB) on 2026-11-14, from a fresh flash of the CI image:
 
 - **Works:** boot from the Pi firmware, SSH, Ethernet (`end0`), WiFi (`wlan0`), Bluetooth
-  (`hci0`, scan tested), cloud-init
+  (`hci0`, pairing tested), cloud-init
   first boot with root and `/var` growth, `/dev/vcio`, `vcgencmd`, `vcmailbox`, tryboot,
   watchdog (`bcm2835_wdt`), hwmon and thermal sysfs, no failed units. `bootc upgrade` and
   `bootc switch` work.
 - **Untested:** HDMI with a monitor, the power button, a power cut during `bootc upgrade`.
 - **Not supported:** `bootc rollback`. Roll back with tryboot instead
   (see [Upgrades and rollback](#upgrades-and-rollback)).
+
+Full feature list, with what was tested on hardware: [HARDWARE.md](HARDWARE.md).
 
 ## How
 
