@@ -60,7 +60,10 @@ jobs:
           sudo podman run --rm "$IMAGE" bash -c '
             cat /usr/lib/os-release
             ls /usr/lib/modules
-            rpm -q raspberrypi2-kernel4 raspberrypi2-firmware linux-firmware-raspberrypi raspberrypi-userland bootc
+            rpm -q kernel-core raspberrypi2-firmware linux-firmware-raspberrypi raspberrypi-userland bootc
+            KVER=$(ls /usr/lib/modules)
+            modinfo -k "$KVER" -F vermagic vcio
+            ls /usr/share/raspberrypi2-kernel-fedora/*/boot
             ls /usr/lib/ostree-boot' | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Assemble SD card image

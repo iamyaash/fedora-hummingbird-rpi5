@@ -3,6 +3,6 @@
 [all]
 # Serial console on the Pi 5's 3-pin debug UART (ttyAMA10).
 enable_uart=1
-# Standard KMS display driver for HDMI.
-dtoverlay=vc4-kms-v3d
+# No dtoverlay lines: the Fedora kernel uses upstream DTBs, and the downstream
+# overlays (such as vc4-kms-v3d) don't match them, so none are shipped.
 disable_overscan=1
