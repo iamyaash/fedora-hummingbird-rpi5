@@ -70,6 +70,7 @@ jobs:
             rpm -q kernel-core raspberrypi2-firmware linux-firmware-raspberrypi raspberrypi-userland bootc
             KVER=$(ls /usr/lib/modules)
             modinfo -k "$KVER" -F vermagic vcio
+            modinfo -k "$KVER" -F vermagic 8250_bcm7271
             ls /usr/share/raspberrypi2-kernel-fedora/*/boot
             ls /usr/lib/ostree-boot' | tee -a "$GITHUB_STEP_SUMMARY"
 

@@ -15,6 +15,17 @@ TODO.md
 INFORMATION.md
 notes/
 
+# Kernel module builds (bcm7271-uart sources are fetched at build time)
+kmod/bcm7271-uart/8250/*.c
+kmod/bcm7271-uart/8250/*.h
+kmod/bcm7271-uart/*.h
+kmod/**/*.ko
+kmod/**/*.o
+kmod/**/*.mod*
+kmod/**/.*.cmd
+kmod/**/Module.symvers
+kmod/**/modules.order
+
 # Image and firmware artifacts
 *.img.xz
 boot-staging/

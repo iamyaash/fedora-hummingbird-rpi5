@@ -12,11 +12,11 @@ firmware and tools from AlmaLinux. The image is named `hummingbird-rpi5`.
 **Status:** Unstable, work in progress. Only the Raspberry Pi 5 is supported (`bcm2712` device trees
 only). Tested on a Pi 5 (8 GB) on 2026-11-14, from a fresh flash of the CI image:
 
-- **Works:** boot from the Pi firmware, SSH, Ethernet (`end0`), WiFi (`wlan0`), cloud-init
+- **Works:** boot from the Pi firmware, SSH, Ethernet (`end0`), WiFi (`wlan0`), Bluetooth
+  (`hci0`, scan tested), cloud-init
   first boot with root and `/var` growth, `/dev/vcio`, `vcgencmd`, `vcmailbox`, tryboot,
   watchdog (`bcm2835_wdt`), hwmon and thermal sysfs, no failed units. `bootc upgrade` and
   `bootc switch` work.
-- **Doesn't work:** Bluetooth (see [Known issues](#known-issues)).
 - **Untested:** HDMI with a monitor, the power button, a power cut during `bootc upgrade`.
 - **Not supported:** `bootc rollback`. Roll back with tryboot instead
   (see [Upgrades and rollback](#upgrades-and-rollback)).
@@ -54,6 +54,12 @@ Details:
   `modules-load.d`. The module is unsigned, so the kernel is tainted (`O`/`E`); it loads
   because `MODULE_SIG_FORCE` is off. If a base image bump changes the kernel API, the vcio
   build fails. That's intended.
+- **Bluetooth:** Fedora's kernel has no `CONFIG_SERIAL_8250_BCM7271`, the driver for the
+  Pi 5 Bluetooth UART (`brcm,bcm7271-uart`). `kmod/bcm7271-uart` builds the unmodified
+  upstream driver out of tree. Its sources, including the internal `8250.h`, are fetched from
+  the kernel.org stable tree at the base kernel's exact version, so the private header matches
+  the running kernel. It loads by DT alias; `hci_uart` and `btbcm` then bring up `hci0` with
+  the Pi 5 firmware patch (`BCM4345C0.raspberrypi,5-model-b.hcd`). Unsigned, like `vcio.ko`.
 - **Device trees:** `bcm2712-rpi-5-b.dtb`, and upstream `bcm2712-d-rpi-5-b.dtb` installed as
   `bcm2712d0-rpi-5-b.dtb` (the name the firmware loads). They're staged under
   `/usr/share/raspberrypi2-kernel-fedora/<kver>/boot/`, where rpi-bootc-bootloader copies
@@ -225,8 +231,9 @@ On another machine:
 
 ## Known issues
 
-- **Bluetooth doesn't work.** Fedora's kernel lacks `CONFIG_SERIAL_8250_BCM7271`, the driver
-  for the Pi 5 BT UART (`brcm,bcm7271-uart`), so no controller appears.
+- **Bluetooth address is the chip default** (`43:45:C0:00:1F:AC`), likely the same on every
+  Pi 5. The upstream DTB has no `local-bd-address` for the firmware to fill in. Matters if
+  you run more than one Pi near each other.
 - **HDMI is untested.** `vc4` loads and logs an upstream `vc4-drm … late IOMMU probe` kernel
   WARNING, harmless so far.
 - **Power button is untested.** The boot log shows
@@ -234,6 +241,6 @@ On another machine:
 - **`bootc rollback` isn't supported** (see above).
 - **Stale files on the FAT partition.** rpi-bootc-bootloader never deletes files from an
   entry folder, so old DTBs and overlays stay after a kernel change.
-- **Tainted kernel.** The unsigned `vcio.ko` taints the kernel (`O`/`E`).
+- **Tainted kernel.** The unsigned `vcio.ko` and `8250_bcm7271.ko` taint the kernel (`O`/`E`).
 
 > Thanks to [Claude](https://claude.ai) (Anthropic), which helped with guidance, reviews, script building and documentation edits.
