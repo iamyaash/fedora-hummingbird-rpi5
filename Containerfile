@@ -14,7 +14,7 @@ FROM ${BASE_IMAGE} AS base
 #   CONFIG_BCM_VCIO. kernel-devel comes from Koji by exact NVR, because the Fedora
 #   updates repo only carries the newest kernel.
 # - 8250_bcm7271.ko: the Pi 5 Bluetooth UART driver. The Fedora kernel has no
-#   CONFIG_SERIAL_8250_BCM7271. Upstream source, fetched at the kernel's exact version.
+#   CONFIG_SERIAL_8250_BCM7271. Unmodified upstream source, vendored at the kernel's version.
 # - Image: the raw arm64 kernel. Fedora's vmlinuz is an EFI zboot wrapper around a
 #   zstd payload, which the Pi firmware can't boot.
 FROM ${BUILDER_IMAGE} AS kernel-build
@@ -26,11 +26,13 @@ RUN --mount=type=bind,from=base,source=/usr/lib/modules,target=/base-modules \
     test "$(echo "$KVER" | wc -w)" = 1; \
     ARCH="${KVER##*.}"; test "$ARCH" = "$(uname -m)"; \
     VER="${KVER%%-*}"; REL="${KVER#*-}"; REL="${REL%.*}"; \
-    dnf -y install --setopt=install_weak_deps=False gcc make kmod zstd curl \
+    dnf -y install --setopt=install_weak_deps=False gcc make kmod zstd \
         "https://kojipkgs.fedoraproject.org/packages/kernel/$VER/$REL/$ARCH/kernel-devel-$KVER.rpm"; \
     make -C /src/vcio KDIR="/usr/src/kernels/$KVER"; \
     modinfo -F vermagic /src/vcio/vcio.ko | grep -q "^$KVER "; \
-    make -C /src/bcm7271-uart KDIR="/usr/src/kernels/$KVER" KVERSION="$VER"; \
+    test "$(cat /src/bcm7271-uart/VERSION)" = "$VER" \
+        || { echo "kmod/bcm7271-uart is for $(cat /src/bcm7271-uart/VERSION), kernel is $VER: run make -C kmod/bcm7271-uart update KVERSION=$VER" >&2; exit 1; }; \
+    make -C /src/bcm7271-uart KDIR="/usr/src/kernels/$KVER"; \
     BT=/src/bcm7271-uart/8250/8250_bcm7271.ko; \
     modinfo -F vermagic "$BT" | grep -q "^$KVER "; \
     modinfo -F alias "$BT" | grep -qx 'of:N\*T\*Cbrcm,bcm7271-uart'; \
